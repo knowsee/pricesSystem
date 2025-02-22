@@ -9,7 +9,7 @@ use Respect\Validation\Exceptions\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
 use app\model\{Brand as BrandModel, Goods as GoodsModel, Prices as PricesModel, PricesLog as PricesLogModel, Types as TypesModel, Files as FilesModel};
-
+use app\helpers\ItemBarcode;
 use Yurun\Util\Chinese;
 use Binaryoung\Jieba\Jieba;
 
@@ -143,7 +143,10 @@ class GoodsController extends Controller
         $brandList = BrandModel::query()->whereIn('id', $brandId)->get();
         $brandList = array_column($brandList->toArray(), null, 'id');
         foreach($goodsList as $key => $goods) {
-            $brandGoods = $brandList[$goods['brand']];
+            $brandGoods = $brandList[$goods['brand']] ?? [
+            	'name_chi' => '',
+            	'name_en' => ''
+            ];
             if($goods['files_path']) {
                 $fileInfo = getimagesize(public_path().'/goods/'.$goods['files_path']);
                 $goodsList[$key]['w'] = $fileInfo[0] ?? null;
@@ -269,10 +272,10 @@ class GoodsController extends Controller
 				'desc_en' => Validator::alwaysValid()->setName('Good desc info'),
                 'brand' => Validator::NotEmpty()->setName('Brand Id'),
                 'gtin' => Validator::Digit()->NotEmpty()->setName('GTIN'),
-				'country' => Validator::stringType()->NotEmpty()->setName('Good country info'),
 				'specs' => Validator::alwaysValid()->setName('Good specs info'),
 				'files_id' => Validator::Number()->setName('Files Id')
             ]);
+            $data['country'] = $post['country'] ?? null;
 			if(empty($data['name']) && empty($data['name_en'])) {
 				return json(['code' => 403, 'msg' => 'zh-tw or en name is empty']);
 			}
@@ -292,7 +295,11 @@ class GoodsController extends Controller
 			$info->gtin = $data['gtin'];
             $info->specs = $data['specs'];
             $info->brand = $brand->id;
-			$info->country = $data['country'];
+			if(ItemBarcode::ean13($data['gtin']) == false) {
+				$info->country = $data['country'];
+			} else {
+				$info->country = ItemBarcode::ean13($data['gtin']);
+			}
 			$info->type = $data['type'] ?? '';
             $info->save();
 			if($filesInfo) {
@@ -324,7 +331,6 @@ class GoodsController extends Controller
 				'desc_en' => Validator::alwaysValid()->setName('Good desc info'),
                 'brand' => Validator::IntType()->NotEmpty()->setName('Brand Id'),
                 'gtin' => Validator::Digit()->NotEmpty()->setName('GTIN'),
-				'country' => Validator::stringType()->NotEmpty()->setName('Good country info'),
 				'specs' => Validator::alwaysValid()->setName('Good specs info'),
 				'files_id' => Validator::Number()->setName('Files Id')
             ]);
@@ -343,6 +349,7 @@ class GoodsController extends Controller
 			} else {
 				$filesInfo = null;
 			}
+			$data['country'] = $post['country'] ?? null;
             $info = new GoodsModel;
 			$info->files_id = intval($data['files_id']) ?? 0;
 			$info->files_path = $filesInfo['files_path'] ?? '';
@@ -353,7 +360,11 @@ class GoodsController extends Controller
 			$info->specs = $data['specs'];
             $info->gtin = $data['gtin'];
             $info->brand = $brand->id;
-			$info->country = $data['country'];
+			if(ItemBarcode::ean13($data['gtin']) == false) {
+				$info->country = $data['country'];
+			} else {
+				$info->country = ItemBarcode::ean13($data['gtin']);
+			}
 			$info->sync_id = $data['sync_id'] ?? '';
 			$info->type = $data['type'] ?? '';
             $info->save();

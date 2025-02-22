@@ -69,7 +69,10 @@ class ApiController extends Controller
         $brandList = BrandModel::query()->whereIn('id', $brandId)->get();
         $brandList = array_column($brandList->toArray(), null, 'id');
         foreach($goodsList as $key => $goods) {
-            $brandGoods = $brandList[$goods['brand']];
+            $brandGoods = $brandList[$goods['brand']] ?? [
+                'name_chi' => '',
+                'name_en' => ''
+            ];
             if($goods['files_path']) {
                 $fileInfo = getimagesize(public_path().'/goods/'.$goods['files_path']);
                 $goodsList[$key]['w'] = $fileInfo[0] ?? null;
