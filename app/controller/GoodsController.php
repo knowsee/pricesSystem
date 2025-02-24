@@ -277,7 +277,7 @@ class GoodsController extends Controller
             ]);
             $data['country'] = $post['country'] ?? null;
 			if(empty($data['name']) && empty($data['name_en'])) {
-				return json(['code' => 403, 'msg' => 'zh-tw or en name is empty']);
+				$data['name_en'] = $data['gtin'];
 			}
             $brand = BrandModel::query()->findOrFail(intval($data['brand']));
             $info = GoodsModel::query()->findOrFail(intval($id));
@@ -334,8 +334,9 @@ class GoodsController extends Controller
 				'specs' => Validator::alwaysValid()->setName('Good specs info'),
 				'files_id' => Validator::Number()->setName('Files Id')
             ]);
+
 			if(empty($data['name']) && empty($data['name_en'])) {
-				return json(['code' => 403, 'msg' => 'zh-tw or en name is empty']);
+				$data['name_en'] = $data['gtin'];
 			}
             $brand = BrandModel::query()->findOrFail(intval($data['brand']));
             $checkSn = GoodsModel::query()->where('gtin', '=', $data['gtin'])->first();
