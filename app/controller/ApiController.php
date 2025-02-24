@@ -83,6 +83,7 @@ class ApiController extends Controller
             }
 
 			$goodsList[$key]['images'] = empty($goods['files_path']) ? null : 'https://img.goods.acghx.net/'.$goods['files_path'];
+            $goodsList[$key]['store_image'] = empty($goods['store_files_path']) ? null : 'https://img.goods.acghx.net/'.$goods['store_files_path'];
             $goodsList[$key]['brand'] = [
                 'id' => $goods['brand'],
                 'name' => $brandGoods['name_chi'],

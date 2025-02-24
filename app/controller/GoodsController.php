@@ -156,6 +156,7 @@ class GoodsController extends Controller
                 $goodsList[$key]['h'] = null;
             }
 			$goodsList[$key]['images'] = empty($goods['files_path']) ? null : 'https://img.goods.acghx.net/'.$goods['files_path'];
+			$goodsList[$key]['store_image'] = empty($goods['store_files_path']) ? null : 'https://img.goods.acghx.net/'.$goods['store_files_path'];
             $goodsList[$key]['brand'] = [
                 'id' => $goods['brand'],
                 'name' => $brandGoods['name_chi'],
@@ -249,7 +250,9 @@ class GoodsController extends Controller
                 'prices_high' => $info->high_price,
                 'update_time' => $info->updated_at,
 				'images' => empty($info->files_path) ? null : 'https://img.goods.acghx.net/'.$info->files_path,
-				'files_id' => $info->files_id
+				'files_id' => $info->files_id,
+				'store_image' => empty($info->store_files_path) ? null : 'https://img.goods.acghx.net/'.$info->store_files_path,
+				'store_files_id' => $info->store_files_id
             ]);
         } catch (ValidationException $e) {
             return $this->messageJson(404, 'Goods not found');
@@ -264,6 +267,7 @@ class GoodsController extends Controller
             $post = $request->post();
             $post['brand'] = intval($post['brand']);
 			$post['files_id'] = intval($post['files_id']);
+			$post['store_files_id'] = intval($post['store_files_id']);
             $data = Validator::input($post, [
             	'type' => Validator::stringType()->NotEmpty()->setName('Good type id'),
                 'name' => Validator::alwaysValid()->setName('Good zh-tw name'),
@@ -273,7 +277,8 @@ class GoodsController extends Controller
                 'brand' => Validator::NotEmpty()->setName('Brand Id'),
                 'gtin' => Validator::Digit()->NotEmpty()->setName('GTIN'),
 				'specs' => Validator::alwaysValid()->setName('Good specs info'),
-				'files_id' => Validator::Number()->setName('Files Id')
+				'files_id' => Validator::Number()->setName('Files Id'),
+				'store_files_id' => Validator::Number()->setName('Files Id')
             ]);
             $data['country'] = $post['country'] ?? null;
 			if(empty($data['name']) && empty($data['name_en'])) {
@@ -286,9 +291,16 @@ class GoodsController extends Controller
 			} else {
 				$filesInfo = null;
 			}
+			if(isset($data['store_files_id']) && intval($data['store_files_id'])>0) {
+				$filesStoreInfo = FilesModel::query()->findOrFail(intval($data['store_files_id']));
+			} else {
+				$filesStoreInfo = null;
+			}
             $info->name_chi = $data['name'];
 			$info->files_id = intval($data['files_id']) ?? 0;
 			$info->files_path = $filesInfo['files_path'] ?? '';
+			$info->store_files_id = $data['store_files_id'] ?? 0;
+			$info->store_files_path = $filesStoreInfo['files_path'] ?? '';
             $info->name_en = $data['name_en'];
             $info->descText_chi = $data['desc'];
 			$info->descText_en = $data['desc_en'];
@@ -307,6 +319,11 @@ class GoodsController extends Controller
 				$filesInfo->use_type = 'goods';
 				$filesInfo->save();
 			}
+			if($filesStoreInfo) {
+				$filesStoreInfo->use_id = $info->id;
+				$filesStoreInfo->use_type = 'store_pic';
+				$filesStoreInfo->save();
+			}
             return $this->dataJson(['id' => $info->id]);
         } catch (ValidationException $e) {
             return $this->messageJson(403, $e->getMessage());
@@ -323,6 +340,7 @@ class GoodsController extends Controller
             $post['brand'] = $post['brand'] < 1 ? 2 : $post['brand'];
             $post['gtin'] = $gtin;
 			$post['files_id'] = intval($post['files_id']);
+			$post['store_files_id'] = intval($post['store_files_id']);
             $data = Validator::input($post, [
             	'type' => Validator::stringType()->NotEmpty()->setName('Good type id'),
                 'name' => Validator::alwaysValid()->setName('Good zh-tw name'),
@@ -332,7 +350,8 @@ class GoodsController extends Controller
                 'brand' => Validator::IntType()->NotEmpty()->setName('Brand Id'),
                 'gtin' => Validator::Digit()->NotEmpty()->setName('GTIN'),
 				'specs' => Validator::alwaysValid()->setName('Good specs info'),
-				'files_id' => Validator::Number()->setName('Files Id')
+				'files_id' => Validator::Number()->setName('Files Id'),
+				'store_files_id' => Validator::Number()->setName('Files Id')
             ]);
 
 			if(empty($data['name']) && empty($data['name_en'])) {
@@ -350,10 +369,17 @@ class GoodsController extends Controller
 			} else {
 				$filesInfo = null;
 			}
+			if(isset($data['store_files_id']) && intval($data['store_files_id'])>0) {
+				$filesStoreInfo = FilesModel::query()->findOrFail(intval($data['store_files_id']));
+			} else {
+				$filesStoreInfo = null;
+			}
 			$data['country'] = $post['country'] ?? null;
             $info = new GoodsModel;
 			$info->files_id = intval($data['files_id']) ?? 0;
 			$info->files_path = $filesInfo['files_path'] ?? '';
+			$info->store_files_id = $data['store_files_id'] ?? 0;
+			$info->store_files_path = $filesStoreInfo['files_path'] ?? '';
             $info->name_chi = $data['name'];
             $info->name_en = $data['name_en'];
             $info->descText_chi = $data['desc'];
@@ -373,6 +399,11 @@ class GoodsController extends Controller
 				$filesInfo->use_id = $info->id;
 				$filesInfo->use_type = 'goods';
 				$filesInfo->save();
+			}
+			if($filesStoreInfo) {
+				$filesStoreInfo->use_id = $info->id;
+				$filesStoreInfo->use_type = 'store_pic';
+				$filesStoreInfo->save();
 			}
             return $this->dataJson(['id' => $info->id]);
         } catch (ValidationException $e) {
