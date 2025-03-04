@@ -13,15 +13,19 @@
  */
 
 use Webman\Route;
+use support\Request;
 
-Route::options('[{path:.+}]', function (){
-    return response('');
+
+Route::any('/backend/[{path:.+}]', function (Request $request) {
+    return redirect('https://img.goods.acghx.net'.$request->path());
+    //return $request->path();
 });
 Route::group('/api/v1', function() {
 	Route::get('/config', [app\controller\IndexController::class, 'config']);
 	
 	Route::get('/goods/cate', [app\controller\GoodsController::class, 'cate']);
     Route::get('/goods/price/{gtin}', [app\controller\PricesController::class, 'goods']);
+    Route::get('/goods/rack/{gtin}', [app\controller\GoodsController::class, 'rack']);
     Route::put('/goods/price/{id:\d+}', [app\controller\PricesController::class, 'goodsPost']);
 
     Route::get('/goods/{sn}', [app\controller\GoodsController::class, 'info']);

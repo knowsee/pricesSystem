@@ -8,7 +8,7 @@ use Respect\Validation\Validator;
 use Respect\Validation\Exceptions\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Exception;
-use app\model\{Brand as BrandModel, Goods as GoodsModel, Prices as PricesModel, PricesLog as PricesLogModel, Types as TypesModel, Files as FilesModel};
+use app\model\{Brand as BrandModel, Goods as GoodsModel, Prices as PricesModel, PricesLog as PricesLogModel, Types as TypesModel, Files as FilesModel, GoodRack as GoodRackModel, GoodsRackInfo as GoodsRackInfoModel};
 use app\helpers\ItemBarcode;
 use Yurun\Util\Chinese;
 use Binaryoung\Jieba\Jieba;
@@ -108,7 +108,7 @@ class GoodsController extends Controller
 			} elseif(!empty($ch_name) && mb_strlen($ch_name) < 2) {
 				return json(['code' => 40301, 'msg' => 'chinese keyword no less 2 letter']);
 			}
-			if((strlen($get['en_name']) == 13 || strlen($get['en_name']) == 12)) {
+			if((strlen($get['en_name']) == 13 || strlen($get['en_name']) == 12) || is_numeric($get['en_name'])) {
 				$query = $query->orWhere('gtin', '=', trim($get['en_name']));
 				$this->keywords = [
 					'type' => 'gtin',
@@ -202,6 +202,37 @@ class GoodsController extends Controller
         }
         return $this->dataJson(['list' => $goodsList,'search' => $this->keywords]);
     }
+
+	public function rack(Request $request, string $gtin)
+	{
+		try {
+            $data = Validator::input([
+                'gtin' => $gtin
+            ], [
+                'gtin' => Validator::Digit()->NotEmpty()->setName('GTIN')
+            ]);
+            $info = GoodsModel::query()->where('gtin', '=', $data['gtin'])->firstOrFail();
+			$rackList = GoodsRackInfoModel::query()->where('goods_id', '=', $info->id)->get();
+			$racksReturn = [];
+			if($rackList) {
+				$racks = GoodRackModel::query()->join('shops', 'good_rack.shop_id', '=', 'shops.id')->whereIn('good_rack.id', $rackList->pluck('rack_id'))->get();
+				foreach($racks->all() as $r) {
+					$racksReturn[] = [
+                        'name' => $r->name,
+                        'shop' => [
+                            'name_en' => $r->name_en
+						],
+						'images' => 'https://img.goods.acghx.net/'.$r->images
+                    ];
+				}
+			}
+			return $this->dataJson(['list' => $racksReturn]);
+		} catch (ValidationException $e) {
+            return $this->messageJson(404, 'Goods not found');
+        } catch (ModelNotFoundException $e) {
+            return json(['code' => 404, 'msg' => $e->getMessage()]);
+        }
+	}
 
 
     public function info(Request $request, string $gtin)

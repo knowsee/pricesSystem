@@ -16,6 +16,10 @@ global $argv;
 
 return [
     // File update detection and automatic reload
+    'webman' => [ 
+        'user' => 'www', // 进程运行的用户，应该使用低级别用户
+        'group' => 'www', // 进程运行的用户组，应该使用低级别用户组\
+    ],
     'monitor' => [
         'handler' => process\Monitor::class,
         'reloadable' => false,
