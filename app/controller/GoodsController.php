@@ -108,8 +108,8 @@ class GoodsController extends Controller
 			} elseif(!empty($ch_name) && mb_strlen($ch_name) < 2) {
 				return json(['code' => 40301, 'msg' => 'chinese keyword no less 2 letter']);
 			}
-			if((strlen($get['en_name']) == 13 || strlen($get['en_name']) == 12) || is_numeric($get['en_name'])) {
-				$query = $query->orWhere('gtin', '=', trim($get['en_name']));
+			if((strlen($get['en_name']) == 13 || strlen($get['en_name']) == 12) || ctype_digit($get['en_name']) || ctype_digit($get['ch_name'])) {
+				$query = $query->orWhere('gtin', '=', trim($get['en_name']))->orWhere('gtin', '=', trim($get['ch_name']));
 				$this->keywords = [
 					'type' => 'gtin',
 					'value' => $get['en_name']
